@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <title>Stocks</title>
+    <style>
+        .column {
+          float: left;
+          width: 33.33%;
+          text-align: center;
+          }
+
+        h1{
+        text-align: center;
+        }
+
+        table{
+        border: 2px solid black;
+        margin-left: auto;
+        margin-right: auto;
+        }
+
+        th{
+          border: 2px solid black;
+          table-layout: fixed;
+          width: 175px;
+          background-color:black;
+          color: #ffffff;
+          text-align: center;
+          vertical-align: middle;
+            }
+
+        td{
+          border: 2px solid black;
+          table-layout: fixed;
+          padding: 10px;
+          width: 175px;
+          color: black;
+          text-align: center;
+          vertical-align: middle;
+        }
+
+        tr:nth-child(even){background-color:#C8C8C8;}
+
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#">MoneyManagement</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+    <div class="navbar-nav">
+      <a class="nav-item nav-link active" href="/profile">Profile</a>
+      <a class="nav-item nav-link" href="/budget">Budget</a>
+      <a class="nav-item nav-link" href="/stocks">Stocks</a>
+        <a class="nav-item nav-link" href="/loan_calc">Loans</a>
+    </div>
+  </div>
+    <span class="navbar-text">
+        <a class="nav-item nav-link" href="/logout">Logout</a>
+    </span>
+</nav>
+
+<div class="column">
+    <br><h1>Investment Summary</h1>
+    <p>Market Value: ${{mv}}</p>
+    <p>Cost Basis: ${{cb}}</p>
+    <p>Gain/Loss: {{gl}}</p>
+</div>
+
+<div class="column">
+<br>
+    <h1>Stock Summary</h1>
+
+    <table>
+            <thead>
+            <tr>
+                <th>Ticker</th>
+                <th>Shares Owned</th>
+                <th>Cost Basis</th>
+                <th>Share price</th>
+                <th>Market Value</th>
+                <th>Gain/Loss</th>
+                <th>Delete</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for data in data %}
+            <tr>
+                <form action="/del_stock" method="POST">
+                    <input type="text" id="del" name="del" value="{{data[0]}}" hidden>
+                <td>{{data[1]}}</td>
+                <td>{{data[3]}}</td>
+                <td>${{data[2]}}</td>
+                <td>${{data[4]}}</td>
+                <td>${{data[5]}}</td>
+                <td>{{data[6]}}%</td>
+                <td>
+                    <button class="btn"><i class="fa fa-trash-o"></i></button>
+                </td>
+                </form>
+
+            </tr>
+            {% endfor %}
+            </tbody>
+</table>
+    <br>
+    <p><a href="/advanced_stats">Click here for advance portfolio statistics.</a></p>
+    <p>This page may take 30+ seconds to load.</p>
+</div>
+<div class="column">
+   <br>
+    <h1>Buy/Sell</h1>
+
+    <script>
+function confirmSale(){
+let sell=confirm("Are you sure you want to sell? This cannot be undone.");
+if (sell)
+ return true ;
+else
+ return false ;
+}
+</script>
+
+    <form action="/add_stock" method="POST">
+        <fieldset>
+        <legend>Purchase</legend>
+       <label for="ticker">Ticker:</label><br>
+       <input type="text" id="ticker" name="ticker" required><br>
+       <label for="shares">Share Quantity:</label><br>
+       <input type="number" id="shares" name="shares" min="1" required><br>
+       <label for="price">Stock Price:</label><br>
+       <input type="number" id="price" name="price" min="0" step=".01", required><br><br>
+        <input type="submit" value="Confirm Purchase"><br>
+        </fieldset>
+   </form>
+
+    <form action="/sell_stock" method="POST" onSubmit="return confirmSale();">
+        <fieldset>
+        <legend>Sell</legend>
+            <p>The default will sell the cheapest units first.</p>
+       <label for="tckr">Ticker:</label><br>
+       <input type="text" id="tckr" name="tckr" required><br>
+       <label for="shares">Share Quantity:</label><br>
+       <input type="number" id="shares2" name="shares2" min="1" required><br><br>
+        <input type="submit" value="Confirm Sale"><br>
+        </fieldset>
+   </form>
+    <a href="/detailed_cost_basis">Click here to sell specific stock units</a>
+
+</div>
+</body>
+</html>
