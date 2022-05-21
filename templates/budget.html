@@ -71,7 +71,8 @@
 <div class="column">
     <br>
     <br><h1>Monthly Budget</h1>
-    <p>Budget: ${{user_info.0.0}}</p>
+    <p><strong>{{new_user.0}}</strong></p>
+    <p>Budget: ${{user_info}}</p>
     <p>Less Expenses: ${{spent.0.0}}</p>
     <p>Funds Remaining: ${{remaining_funds}} </p>
 </div>
@@ -95,9 +96,9 @@
             {% for data in data %}
             <tr>
                 <form action="/del_expense" method="POST">
-                    <input type="text" id="del" name="del" value="{{data[0]}}" hidden><br>
+                    <input type="text" id="del" name="del" value="{{data[0]}}" hidden>
                 <td>{{data[1]}}</td>
-                <td>{{data[2]}}</td>
+                <td>${{data[2]}}</td>
                 <td>{{data[3]}}</td>
                 <td>{{data[4]}}</td>
                 <td>{{data[5]}}</td>
@@ -108,11 +109,12 @@
             </tr>
             {% endfor %}
             </tbody>
+            </tbody>
 </table>
 </div>
 <div class="column">
    <br>
-    <h2>{{new_user}}</h2>
+    <h3>{{new_user.1}}</h3>
     <h1>Add Expense</h1>
 
 
@@ -128,7 +130,7 @@
        <label for="category">Category:</label><br>
        <input type="text" id="category" name="category" required><br>
        <label for="notes">Notes:</label><br>
-       <input type="text" id="notes" name="notes" required><br><br>
+       <input type="text" id="notes" name="notes" ><br><br>
             <input type="submit" value="Confirm Expense"><br>
 
         </fieldset>

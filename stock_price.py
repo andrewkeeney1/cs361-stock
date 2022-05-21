@@ -6,6 +6,8 @@ from datetime import date, timedelta
 from passlib.hash import pbkdf2_sha256
 from sqlite3 import Error
 from functools import wraps
+import requests
+import time
 
 app = Flask(__name__)
 app.secret_key = ['beepboop']
@@ -78,7 +80,7 @@ def login():
         flash("Wrong password!")
         return redirect('/')
 
-    #if not pbkdf2_sha256.verify(pWord[0], hash):
+    #if not pbkdf2_sha256.verify(uName[0][2], hash):
         # how to do we determine current user session?
         #error: flash message
     #    return redirect('/')
@@ -182,20 +184,21 @@ def update_savings():
 @session_check
 def budget():
     conn = sqlite3.connect('stocks.db')
-    cursor = conn.execute("SELECT ID, NAME, AMOUNT, EXP_DATE, CATEGORY, DESCRIPTION from BUDGET WHERE USERNAME = (?)", (session['username'],))
+    cursor = conn.execute("SELECT ID, NAME, AMOUNT, EXP_DATE, CATEGORY, DESCRIPTION from BUDGET WHERE USERNAME = (?) ORDER BY AMOUNT DESC", (session['username'],))
     budget_info = (cursor.fetchall())
     cursor2 = conn.execute("SELECT MONTHLY_INCOME, SAVINGS_GOAL from USER WHERE USERNAME = (?)",(session['username'],))
     user_info = (cursor2.fetchall())
     cursor3 = conn.execute("SELECT SUM(AMOUNT)from BUDGET WHERE USERNAME = (?)", (session['username'],))
     spent_this_month = (cursor3.fetchall())
 
+    monthly_budget = user_info[0][0] - user_info[0][1]
 
     if len(budget_info) > 0:
-        remaining_funds = user_info[0][0] - spent_this_month[0][0]
-        return (render_template("budget.html", data = budget_info, user_info = user_info, spent = spent_this_month, remaining_funds = remaining_funds))
+        remaining_funds = monthly_budget - spent_this_month[0][0]
+        return (render_template("budget.html", new_user = [], data = budget_info, user_info = monthly_budget, spent = spent_this_month, remaining_funds = remaining_funds))
     else:
-        new_user = "Start here!"
-        return (render_template("budget.html", new_user = new_user, user_info = [[]], spent = [[]]))
+        new_user = ["Your monthly budget is equal to your income less your savings goal!", "Start here!"]
+        return (render_template("budget.html", new_user = new_user, data= budget_info, user_info = monthly_budget, spent = [[]]))
 
 @app.route('/add_expense', methods = ['POST', 'GET'])
 @session_check
@@ -248,7 +251,6 @@ def display():
     # populate db_list with DB data, plus yfinance/ath
     for stock in range(len(stocks)):
         db_list.append(list(stocks[stock]))  # convert DB tuple to list.
-        print(db_list)
         # next line gets the current rounded price using yfinance API.
         if date.today().weekday() == 6:
             yesterday = date.today() - timedelta(days=2)
@@ -266,15 +268,15 @@ def display():
     # variables to roll up total cost basis and MV from each row.
     cost_basis = 0
     market_value = 0
-    print(db_list)
-
 
     for _ in range(len(db_list)):
         cost_basis += round(db_list[_][2] * db_list[_][3], 2)
         market_value += round(db_list[_][3] * db_list[_][4], 2)
 
+    round(market_value, 2)
+
     if cost_basis:
-        gain_loss = str(round(market_value/cost_basis - 1)) + "%"
+        gain_loss = str(round(((market_value/cost_basis - 1) * 100),2)) + "%"
     else:
         gain_loss = 0
 
@@ -287,11 +289,11 @@ def display():
 def purchase():
     ticker = request.form['ticker']
     shares = request.form['shares']
-    price = round(int(request.form['price']),2)
+    price = request.form['price']
 
     # add a stock purchase to the DB
     conn = sqlite3.connect('stocks.db')
-    conn.execute("INSERT INTO STOCKS (ID, TICKER,COST_BASIS,SHARES_OWNED, USERNAME) VALUES (NULL, ?, ?, ?, ?)", (ticker, shares, price, session['username']))
+    conn.execute("INSERT INTO STOCKS (ID, TICKER,COST_BASIS,SHARES_OWNED, USERNAME) VALUES (NULL, ?, ?, ?, ?)", (ticker, price, shares, session['username']))
     conn.commit()
     conn.close()
 
@@ -315,7 +317,41 @@ def delete_stock():
 @app.route('/advanced_stats', methods = ['POST', 'GET'])
 @session_check
 def advanced_stats():
-    return render_template("advanced_info.html")
+    conn = sqlite3.connect('stocks.db')
+    cursor = conn.execute("SELECT TICKER from STOCKS WHERE USERNAME = (?) GROUP BY TICKER;", (session['username'],))
+    tickers = cursor.fetchall()
+
+    jinja_data =[]
+
+    for index, ticker in enumerate(tickers):
+        ticker_info = []
+        ticker_info.append(tickers[index][0])
+        tk = yfin.Ticker(tickers[index][0])
+
+        #mkt cap and PE.
+        info = tk.info
+        ticker_info.append(round(info["marketCap"] / 1000000, 2))
+        ticker_info.append(round(info["trailingEps"], 2))
+
+        # yfin 52wk min/max
+        yfin.pdr_override()
+        data = yfin.download(tickers[index][0], period="1y")
+        ticker_info.append(round(data['High'].max(), 2))
+        ticker_info.append(round(data['Low'].min(), 2))
+
+        ticker_url = CIK_Helper(tickers[index][0])  # Helper function to call microservice.  This will both segment off some additional logic and allow me
+                                                    # to comment out during testing to avoid Deirdre's Google Cloud account from going over call limit.
+
+        ticker_info.append(ticker_url)
+        jinja_data.append(ticker_info)
+
+    return render_template("advanced_info.html", tickers = jinja_data)
+
+def CIK_Helper (ticker):
+    headers = {'Accept': 'application/json'}
+    r = requests.get(f'https://cs361-microservice-spring22.uw.r.appspot.com/get_cik/{ticker.lower()}', headers=headers)
+    ticker_url = (r.json()['url'])
+    return ticker_url
 
 @app.route('/loan_calc', methods = ['POST', 'GET'])
 @session_check

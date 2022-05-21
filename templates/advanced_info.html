@@ -65,31 +65,30 @@
 </nav>
 
     <h1>Advanced Stock Summary</h1>
-    <p>More coming soon!</p>
     <table>
             <thead>
             <tr>
                 <th>Ticker</th>
-                <th>Share price</th>
                 <th>Market Cap</th>
                 <th>P/E Ratio</th>
                 <th>52 Wk High</th>
                 <th>52 Wk Low</th>
-                <th>Current 10-Q</th>
+                <th>SEC Reporting</th>
             </tr>
             </thead>
             <tbody>
-            {% for data in data %}
+
+            {% for ticker in tickers %}
             <tr>
-                <input type="text" id="del" name="del" value="{{data[0]}}" hidden><br>
-                <td>{{data[1]}}</td>
-                <td>{{data[2]}}</td>
-                <td>${{data[3]}}</td>
-                <td>${{data[4]}}</td>
-                <td>${{data[5]}}</td>
-                <td>{{data[6]}}%</td>
+                <td>{{ticker.0}}</td>
+                <td>${{ticker.1}}MM</td>
+                <td>${{ticker.2}}</td>
+                <td>${{ticker.3}}</td>
+                <td>${{ticker.4}}</td>
+                <td><a href="{{ticker.5}}">EDGAR</a> </td>
             </tr>
             {% endfor %}
+
             </tbody>
 </table>
 </div>
